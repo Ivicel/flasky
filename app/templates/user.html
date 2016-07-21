@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+	<h4>Hello, 
+	{% if username %}
+		{{ username }}
+	{% else %}
+		Strager
+	{% endif %}
+	</h4>
+{% endblock %}

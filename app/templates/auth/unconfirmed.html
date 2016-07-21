@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+	{% for msg in get_flashed_messages() %}
+		<div class="alert alert-warning alert-dismissable">
+			<button type="button" aira-label="Close" data-dismiss="close" class="close">
+				<span aria-hidden="true">&times;</span>
+			</button>
+			{{ msg }}
+		</div>
+	{% endfor %}
+	<p>Your account has not confirmed yet, please click 
+	<a href="{{ url_for('auth.resend_email') }}">here</a>
+	to resend confirmed email.
+	</p>
+{% endblock %}
