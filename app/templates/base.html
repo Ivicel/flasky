@@ -1,5 +1,10 @@
 {% extends 'bootstrap/base.html' %} 
 
+{% block head %}
+    {{ super() }}
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='cat_logo.png') }}"></link>
+{% endblock %}
+
 {% block navbar %}
 <nav class="navbar navbar-inverse">
     <div class="container-fluid">

@@ -33,19 +33,51 @@ class User(db.Model, UserMixin):
 	def check_password(self, password):
 		return check_password_hash(self.password_hash, password)
 
-	def generate_token(self, expiration=3600):
-		s = Serializer(current_app.config['SECRECT_KEY'], expiration)
-		return s.dumps({'confirm': self.id})
+	def generate_token(self, expiration=3600, new_email=None, reset_password=False):
+		s = Serializer(current_app.config['SECRET_KEY'], expiration)
+		if new_email is not None and not reset_password:
+			return s.dumps({
+				'confirm': self.id,
+				'new_email': new_email
+			})
+		return s.dumps({
+			'confirm': self.id,
+			'reset': reset_password
+		})
 
-	def confirm_email(self, token):
-		s = Serializer(current_app.config['SECRECT_KEY'])
+	def confirm_token(self, token, change_email=False):
+		s = Serializer(current_app.config['SECRET_KEY'])
 		try:
 			data = s.loads(token)
 		except:
 			return False
-		if data.get('confirm') != self.id:
+		if data.get('confirm') == self.id:
+			if data.get('reset') is not None and not change_email:
+				self.confirmed = True
+			elif data.get('new_email') is not None and change_email:
+				self.email = data.get('new_email')
+			else:
+				return False
+		else:
 			return False
-		self.confirmed = True
 		db.session.add(self)
 		db.session.commit()
 		return True
+
+	@staticmethod
+	def confirm_reset_password(token, password):
+		s = Serializer(current_app.config['SECRET_KEY'])
+		try:
+			data = s.loads(token)
+		except:
+			return False
+		if not data.get('reset'):
+			return False
+		user = User.query.filter_by(id=data.get('confirm')).first()
+		if user is None:
+			return False
+		user.password = password
+		db.session.add(user)
+		db.session.commit()
+		return True
+

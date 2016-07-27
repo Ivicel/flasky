@@ -1,8 +1,8 @@
-Dear {{ user.username }}:
+<div>Dear <strong>{{ user.username }}</strong>:</div>
 
-Welcome to flasky
+<div>Welcome to flasky</div>
 
-please click the link below to active your account:
+<div>please click the link below to active your account:</div>
 
-{{ url_for('auth.confirm', token=token, _external=True) }}
+<div>{{ url_for('auth.confirm_email_address', token=token, _external=True) }}</div>
 

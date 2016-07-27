@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+{% for message in get_flashed_messages() %}
+	<div class="alert alert-warning alert-dismissable" role="alert">
+		<button type="button" aria-label="Close" data-dismiss="alert" class="close">
+			<span aria-hidden="true">&times;</span>
+		</button>
+		{{ message }}
+	</div>
+{% endfor %}
+	<h1>Hello, {{ current_user.username }}</h1>
+	<h3>You have not confirmed your account yet.</h3>
+	<p>Before you can access this site you need to confirm your account. Check your
+		inbox, you should have received an email with a confirmation link.</p>
+	<p>Need another confirmation email? 
+		<a href="{{ url_for('auth.resend_email') }}">Click here</a>
+	</p>
+{% endblock %}

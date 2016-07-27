@@ -4,4 +4,4 @@ Welcome to flasky
 
 please click the link below to active your account:
 
-{{ url_for('auth.confirm', token=token, _external=True) }}
+{{ url_for('auth.confirm_email_address', token=token, _external=True) }}

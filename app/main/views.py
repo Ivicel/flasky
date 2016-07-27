@@ -11,4 +11,4 @@ def index():
 
 @main.route('/user/<username>')
 def profile(username):
-	pass
+	return render_template('profile.html')

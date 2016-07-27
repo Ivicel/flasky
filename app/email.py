@@ -9,7 +9,7 @@ def send_mail(to, subject, template, **kwargs):
 	msg.body = render_template(template + '.txt', **kwargs)
 	msg.html = render_template(template + '.html', **kwargs)
 	thr = Thread(target=async_send_mail, args=[current_app._get_current_object(), msg])
-	thr.run()
+	thr.start()
 
 def async_send_mail(app, msg):
 	with app.app_context():
