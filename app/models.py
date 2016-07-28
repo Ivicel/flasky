@@ -5,22 +5,37 @@ from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db, login_manager
 
-
+class Permission:
+	FOLLOW = 0x01
+	COMMENT = 0x02
+	WRITE_ARTICLES = 0x04
+	MODERATE_COMMENTS = 0x08
+	ADMINISTER = 0x80
 
 class Role(db.Model):
 	__tablename__ = 'roles'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(64), unique=True)
 	users = db.relationship('User', backref='role', lazy='dynamic')
+	default = db.Column(db.Boolean, default=False, index=True)
+	permissions = db.Column(db.Integer)
 
 	@staticmethod
 	def insert_roles():
-		roles = ['Administrtor', 'Moderator', 'User']
-		for role in roles:
-			r = Role.query.filter_by(name=role).first()
-			if r is None:
-				r = Role(name=role)
-				db.session.add(r)
+		roles = {
+			'User': (Permission.FOLLOW | Permission.COMMENT | 
+				Permission.WRITE_ARTICLES, True),
+			'Moderator': (Permission.FOLLOW | Permission.COMMENT |
+				Permission.WRITE_ARTICLES | Permission.MODERATE_COMMENTS, False),
+			'Administrtor': (0xff, False)
+		}
+		for r in roles:
+			role = Role.query.filter_by(name=r).first()
+			if role is None:
+				role = Role(name=r)
+			role.permissions = roles[r][0]
+			role.default = roles[r][1]
+			db.session.add(role)
 		db.session.commit()
 
 	def __repr__(self):
@@ -35,6 +50,13 @@ class User(db.Model, UserMixin):
 	password_hash = db.Column(db.String(128))
 	confirmed = db.Column(db.Boolean, default=False)
 	
+	def __init__(self, **kwargs):
+		super(User, self).__init__(**kwargs)
+		if self.role is None:
+			if self.email == current_app.config['FLASKY_ADMIN']:
+				self.role = Role.query.filter_by(permissions=0xff).first()
+			if self.role is None:
+				self.role = Role.query.filter_by(default=True).first()
 
 	@property
 	def password(self):
@@ -99,9 +121,22 @@ class User(db.Model, UserMixin):
 		user = cls.query.filter_by(email=email).first()
 		return user
 
+	def can(self, permissions):
+		return self.role is not None and \
+			(self.role.permissions & permissions) == permissions
+
+	def is_administrator(self):
+		retur self.can(Permission.ADMINISTER)
+
 	def __repr__(self):
 		return 'In user %s' % self.username
 
+class AnonymousUser(AnonymousUserMixin):
+	def can(self, permissions):
+		return False
+
+	def is_administrator(self):
+		return False
 
 @login_manager.user_loader
 def load_user(user_id):
