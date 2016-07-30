@@ -137,7 +137,8 @@ def confirm_to_reset_password(token):
 
 @auth.before_app_request
 def check_account_confirm():
-	if current_user.is_authenticated and not current_user.confirmed and \
-		request.endpoint[:5] != 'auth.':
-		return redirect(url_for('auth.unconfirmed'))
+	if current_user.is_authenticated :
+		current_user.ping()
+		if not current_user.confirmed and request.endpoint[:5] != 'auth.':
+			return redirect(url_for('auth.unconfirmed'))
 

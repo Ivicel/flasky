@@ -7,7 +7,7 @@ class Config:
 	FLASK_ADMIN = os.environ.get('FLASK_ADMIN')
 	FLASK_MAIL_SUBJECT_PREFIX = '[Flasky]'
 	SECRET_KEY = 'This is a very hard to guess key'
-	MAIL_DEFAULT_SENDER = os.environ.get('FLASK_ADMIN')
+	MAIL_DEFAULT_SENDER = '<Flask> ' + os.environ.get('FLASK_ADMIN')
 	FLASK_SUBJECT_PREFIX = '[Flasky]'
 	SQLALCHEMY_TRACK_MODIFICATIONS = True
 
