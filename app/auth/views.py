@@ -1,9 +1,10 @@
+from datetime import datetime
 from . import auth
-from .forms import LoginForm, RegisterForm, ChangeEmailForm, ChangePasswordForm, \
-	SendResetPasswordForm, ConfirmResetPasswordForm
-from .. import login_manager, db
 from ..models import User
 from ..email import send_mail
+from .. import login_manager, db
+from .forms import LoginForm, RegisterForm, ChangeEmailForm, ChangePasswordForm, \
+	SendResetPasswordForm, ConfirmResetPasswordForm
 from flask_login import login_user, logout_user, login_required, current_user
 from flask import render_template, redirect, url_for, flash, request, abort
 
@@ -39,8 +40,11 @@ def login():
 @auth.route('/logout')
 @login_required
 def logout():
-	flash('You have been logged out.')
+	current_user.last_seen = datetime.utcnow()
+	db.session.add(current_user)
+	db.session.commit()
 	logout_user()
+	flash('You have been logged out.')
 	return redirect(url_for('main.index'))
 
 # 注册

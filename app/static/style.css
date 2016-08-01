@@ -1,0 +1,21 @@
+.clearfix:after {
+	display: block;
+	content: "";
+	clear: both;
+	visibility: hidden;
+}
+
+.avatar-icon {
+	width: 23px;
+	border-radius: 50%;
+}
+
+.profile-avatar {
+	float: left;
+	margin: 15px 25px;
+}
+
+.profile-avatar img {
+	width: 230px;
+	border-radius: 7%;
+}

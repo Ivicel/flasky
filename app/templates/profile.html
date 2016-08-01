@@ -1,9 +1,19 @@
 {% extends "base.html" %}
 
+{% block title %}Flasky - {{ current_user.username }}'s profile{% endblock %}
 
 {% block page_content %}
-	<p>username: {{ current_user.username }}</p>
-	<p>email: {{ current_user.email }}</p>
-	<p><a href="{{ url_for('auth.change_email') }}">Change Email</a></p>
-	<p><a href="{{ url_for('auth.change_password') }}">Change Password</a></p>
+<div class="page-header clearfix">
+	<div class="profile-avatar">
+		<img src="{{ current_user.avatar_hash }}" alt="avatar" class="rounded">
+	</div>
+	<div class="profile">
+		<h1 class="username">{{ current_user.username }}</h1>
+		<p>
+			Member since:{{ moment(current_user.member_since).format('MM/DD/YYYY') }}.
+			Last seen {{ moment(current_user.last_seen).fromNow() }}
+		</p>
+		<a href="{{ url_for('main.edit_profile', username=user.username) }}" class="btn btn-default">Edit profile</a>
+	</div>
+</div>
 {% endblock %}
