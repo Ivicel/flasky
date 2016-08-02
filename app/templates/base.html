@@ -5,64 +5,69 @@
 {% endblock %}
 
 {% block head %}
-    {{ super() }}
-    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='cat_logo.png') }}"></link>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"></link>
+	{{ super() }}
+	<link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='cat_logo.png') }}"></link>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"></link>
 {% endblock %}
 
 {% block navbar %}
 <nav class="navbar navbar-inverse">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#header-navbar-toggle" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a href="#" class="navbar-brand">Flasky</a>
-        </div>
-        <div class="collapse navbar-collapse" id="header-navbar-toggle">
-            <ul class="nav navbar-nav">
-                <li><a href="/">Home</a></li>
-                {% if current_user.is_authenticated %}
-                <li>
-                    <a href="{{ url_for('main.profile',
+	<div class="container">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#header-navbar-toggle" aria-expanded="false">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a href="#" class="navbar-brand">Flasky</a>
+		</div>
+		<div class="collapse navbar-collapse" id="header-navbar-toggle">
+			<ul class="nav navbar-nav">
+				<li><a href="/">Home</a></li>
+				{% if current_user.is_authenticated %}
+				<li>
+					<a href="{{ url_for('main.profile',
 						username=current_user.username) }}">
 					Profile
 					</a>
-                </li>
-                {% endif %}
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-                {% if current_user.is_authenticated %}
-                <li role="presentation" class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" 
-                        role="button" aria-haspopup="true" aria-expanded="false">
-                        <img src="{{ current_user.avatar_hash }}" alt="avatar" class="avatar-icon">
-                        Account<span class="caret"></span>    
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a href="{{ url_for('auth.change_password') }}">
-                            Change Password
-                        </a></li>
-                        <li><a href="{{ url_for('auth.change_email') }}">
-                            Change Email
-                        </a></li>
-                        <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
-                    </ul>
-                </li>
-                {% else %}
-                <li><a href="{{ url_for('auth.login') }}">Login</a></li>
-                {% endif %}
-            </ul>
-        </div>
-    </div>
+				</li>
+				{% if current_user.is_administrator() %}
+				<li>
+					<a href="{{ url_for('main.manage_accounts') }}">Manage accounts</a>
+				</li>
+				{% endif %}
+				{% endif %}
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+				{% if current_user.is_authenticated %}
+				<li role="presentation" class="dropdown">
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown" 
+						role="button" aria-haspopup="true" aria-expanded="false">
+						<img src="{{ current_user.generate_avatar_hash(size=100) }}" alt="avatar" class="avatar-icon">
+						Account<span class="caret"></span>    
+					</a>
+					<ul class="dropdown-menu">
+						<li><a href="{{ url_for('auth.change_password') }}">
+							Change Password
+						</a></li>
+						<li><a href="{{ url_for('auth.change_email') }}">
+							Change Email
+						</a></li>
+						<li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+					</ul>
+				</li>
+				{% else %}
+				<li><a href="{{ url_for('auth.login') }}">Login</a></li>
+				{% endif %}
+			</ul>
+		</div>
+	</div>
 </nav>
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        {% block page_content %}{% endblock %}
-    </div>
+	<div class="container">
+		{% block page_content %}{% endblock %}
+	</div>
 {% endblock %}

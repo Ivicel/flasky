@@ -67,7 +67,7 @@ class User(db.Model, UserMixin):
 				self.role = Role.query.filter_by(permissions=0xff).first()
 		if self.role is None:
 			self.role = Role.query.filter_by(default_user=True).first()
-		self.avatar_hash = self.generate_avatar_hash()
+		self.avatar_hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
 
 	@property
 	def password(self):
@@ -131,7 +131,7 @@ class User(db.Model, UserMixin):
 	def can(self, permission):
 		try:
 			return self.role is not None and \
-				(self.permissions & permission) == permission
+				(self.role.permissions & permission) == permission
 		except:
 			return False
 
@@ -139,17 +139,22 @@ class User(db.Model, UserMixin):
 		return self.can(Permission.ADMINISTER)
 
 	def generate_avatar_hash(self, size=300, default="identicon", rate='g'):
-		url = 'https://www.gravatar.com/avatar/' + \
+		email_hash = self.avatar_hash or \
 			hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+		url = 'https://www.gravatar.com/avatar/' + email_hash
 		return '{url}?default={default}&r={rate}&size={size}'.format(url=url, 
 			default=default, rate=rate, size=size)
 
 	@staticmethod
-	def update_avatar():
+	def update_user_info():
 		users = User.query.all()
+		default_user = Role.query.filter_by(default_user=True).first()
 		for user in users:
-		# if user.avatar_hash is None:
-			user.avatar_hash = user.generate_avatar_hash()
+			if True or user.avatar_hash is None:
+				user.avatar_hash = hashlib.md5(
+					user.email.lower().encode('utf-8')).hexdigest()
+			if user.role is None:
+				user.role = default_user
 			db.session.add(user)
 		db.session.commit()
 

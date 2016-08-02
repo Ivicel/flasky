@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Flasky - Manage accounts{% endblock %}
+{% block page_content %}
+	<div class="page-header">
+		<h1>Manage Accounts</h1>
+	</div>
+	<ul>
+		{% for user in users %}
+		<li>
+			{{ user.username }}
+			<a href="{{ url_for('main.admin_edit_profile', username=user.username) }}"
+				class="btn btn-danger">Edit profile[Admin]</a>
+		</li>
+		{% endfor %}
+	</ul>
+{% endblock %}
