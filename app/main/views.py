@@ -1,6 +1,7 @@
 from . import main
 from .forms import EditProfileForm, AdminEditProfile
-from flask import render_template, url_for, redirect, abort, flash
+from flask import render_template, url_for, redirect, abort, flash, request, \
+	current_app
 from flask_login import login_required, current_user
 from flask_sqlalchemy import Pagination
 from ..models import User, Role
@@ -70,5 +71,7 @@ def admin_edit_profile(username):
 
 @main.route('/manage-accounts')
 def manage_accounts():
-	users = User.query.all()
-	return render_template('manage-accounts.html', users=users)
+	page = request.args.get('page', 1, type=int)
+	pagination = User.query.paginate(page=page, per_page=current_app.config['PER_PAGE'])
+	users = pagination.items
+	return render_template('manage-accounts.html', users=users, pagination=pagination)

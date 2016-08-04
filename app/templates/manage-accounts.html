@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Flasky - Manage accounts{% endblock %}
+{% import "_macro_pagination.html" as macro_pagination %}
 {% block page_content %}
 	<div class="page-header">
 		<h1>Manage Accounts</h1>
@@ -13,4 +14,5 @@
 		</li>
 		{% endfor %}
 	</ul>
+{{ macro_pagination.pagination_widget(pagination, request.endpoint) }}
 {% endblock %}
