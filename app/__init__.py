@@ -33,3 +33,6 @@ def create_app(config_name):
 	app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
 	return app
+
+from .models import AnonymousUser
+login_manager.anonymous_user = AnonymousUser

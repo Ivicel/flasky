@@ -2,30 +2,20 @@ from flask import render_template, url_for, redirect, session, current_app, abor
 from flask_login import login_required, current_user
 from .. import db
 from . import main
-from ..models import Role, User, Permission
-from .forms import NameForm, EditProfileForm, EditProfileAdminForm
+from ..models import Role, User, Permission, Post
+from .forms import PostForm, EditProfileForm, EditProfileAdminForm
 from ..email import send_mail
 from ..decorators import admin_required, permission_required
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-	form = NameForm()
-	if form.validate_on_submit():
-		user = User.query.filter_by(username=form.username.data).first()
-		if user is None:
-			session['known'] = False
-			user = User(username=form.username.data)
-			db.session.add(user)
-			db.session.commit()
-			send_mail(current_app.config['FLASK_ADMIN'], 'New user', 'new_user',
-				user=user)
-		else:
-			session['known'] = True
-		session['username'] = form.username.data
-		form.username.data = ''
+	form = PostForm()
+	if not current_user.can(Permission.WRITE_ARTICLES) and \
+		form.validate_on_submit():
+		post = Post(body=form.body.data, author=current_user._get_current_object())
 		return redirect(url_for('.index'))
-	return render_template('index.html', form=form, known=session.get('known', False),
-		username=session.get('username'))
+	posts = Post.query.order_by(Post.timestamp.desc()).all()
+	return render_template('index.html', form=form, posts=posts)
 
 @main.route('/user/<username>')
 @login_required

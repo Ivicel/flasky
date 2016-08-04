@@ -1,0 +1,28 @@
+.post {
+	list-style: none;
+	border-bottom: 1px solid #dcdbdb;
+	margin: 15px 10px;
+}
+
+.post .avatar {
+	/*display: inline-block;*/
+	float: left;
+	width: 8%;
+}
+
+.post .avatar img {
+	width: 50px;
+	/*margin-right: 15px;*/
+}
+
+.post-content {
+	display: inline-block;
+	width: 90%;
+}
+
+.clearfix:after {
+	display: block;
+	content: "";
+	visibility: hidden;
+	clear: both;
+}

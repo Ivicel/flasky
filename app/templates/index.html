@@ -1,13 +1,12 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-
+{% import "_post.html" as macro_post %}
 {% block title_content %}
 Welcome to flask world!
 {% endblock %}
 
 
 {% block page_content %}
-	<h4>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}Strager{% endif %}</h4>
 	{% for message in get_flashed_messages() %}
 			<div class="alert alert-danger alert-dismissable">
 		<button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -16,8 +15,8 @@ Welcome to flask world!
 		{{ message }}
 	</div>
 	{% endfor %}
-	<p>
-		{% if known %}Happy to see you again.{% else %}Nice to meet you.{% endif %}
-	</p>
-	{{ wtf.quick_form(form) }}
+	<div class="page-header">
+	</div>
+	{% if current_user.is_athenticated %}{{ wtf.quick_form(form) }}{% endif %}
+{{ macro_post.show_post(posts) }}
 {% endblock %}

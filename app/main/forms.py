@@ -4,16 +4,6 @@ from wtforms.validators import DataRequired, Length, Email, Regexp, ValidationEr
 from ..models import User, Role
 
 
-class NameForm(Form):
-	# email = StringField("Please input your email.", validators=[DataRequired(),
-		# is_an_email_address()])
-	# password = PasswordField("Input your password.", validators=[DataRequired(),
-	# 	EqualTo('password_confirm', "The password looks like not the same.")])
-	# password_confirm = PasswordField("Confirm your password.", validators=[
-	# 	DataRequired()])
-	username = StringField("Please input your name.", validators=[DataRequired()])
-	submit = SubmitField("Submit")
-
 class EditProfileForm(Form):
 	name = StringField('Real name', validators=[Length(0, 64)])
 	location = StringField('Location', validators=[Length(0, 64)])
@@ -47,3 +37,7 @@ class EditProfileAdminForm(Form):
 		if field.data != self.user.username and \
 			User.query.filter_by(username=field.data).first():
 			raise ValidationError('Username already in use.')
+
+class PostForm(Form):
+	body = TextAreaField("What's on your mind?", validators=[DataRequired()])
+	submit = SubmitField('Submit')

@@ -1,5 +1,4 @@
 {% extends "bootstrap/base.html" %}
-
 {% block scripts %}
 	{{ super() }}
 	{{ moment.include_moment() }}
@@ -11,6 +10,7 @@
 		type="image/x-icon"></link>
 	<link rel="icon" href="{{ url_for('static', filename='cat_grumpy.png') }}"
 		type="image/x-icon"></link>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></link>
 {% endblock %}
 
 {% block title %}Flasky - {% block title_content %}{% endblock %}{% endblock %}

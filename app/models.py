@@ -1,3 +1,4 @@
+import hashlib
 from flask import current_app, request
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -5,7 +6,9 @@ from flask_login import UserMixin, AnonymousUserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db, login_manager
 from datetime import datetime
-import hashlib
+from forgery_py import forgery
+from random import randrange
+
 
 class Permission:
 	FOLLOW = 0x01
@@ -57,6 +60,7 @@ class User(db.Model, UserMixin):
 	member_since = db.Column(db.DateTime(), default=datetime.utcnow)
 	last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
 	avatar_hash = db.Column(db.String(128))
+	posts = db.relationship('Post', backref='author', lazy='dynamic')
 	
 	def __init__(self, **kwargs):
 		super(User, self).__init__(**kwargs)
@@ -66,7 +70,7 @@ class User(db.Model, UserMixin):
 			if self.role is None:
 				self.role = Role.query.filter_by(default=True).first()
 		if self.email is not None and self.avatar_hash is None:		
-			self.avatar_hash = self.generate_avatar()
+			self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
 
 	@property
 	def password(self):
@@ -149,9 +153,24 @@ class User(db.Model, UserMixin):
 			url = 'https://secure.gravatrar.com/avatra'
 		else:
 			url = 'http://www.gravatar.com/avatar'
-		hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+		hash = self.avatar_hash or hashlib.md5(self.email.encode('utf-8')).hexdigest()
 		return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
 			url=url, hash=hash, size=size, default=default, rating=rating)
+
+	@staticmethod
+	def generate_fake_users():
+		for i in range(0, 100):
+			username = forgery.internet.user_name()
+			email = forgery.internet.email_address()
+			if User.query.filter_by(username=username).first() or \
+				User.query.filter_by(email=email).first():
+				continue
+			user = User(username=username, email=email, password='123', confirmed=True)
+			user.name = forgery.name.full_name()
+			user.location = forgery.name.location()
+			user.about_me = forgery.lorem_ipsum.paragraph()
+			db.session.add(user)
+		db.session.commit()
 
 	def __repr__(self):
 		return 'In user %s' % self.username
@@ -162,6 +181,23 @@ class AnonymousUser(AnonymousUserMixin):
 
 	def is_administrator(self):
 		return False
+
+class Post(db.Model):
+	__tablename__ = 'posts'
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+	author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+	@staticmethod
+	def generate_fake_posts():
+		users = User.query.all()
+		for user in users:
+			for i in range(0, randrange(1, 2)):
+				post = Post(author=user)
+				post.body = forgery.lorem_ipsum.paragraphs()
+				db.session.add(post)
+		db.session.commit()
 
 @login_manager.user_loader
 def load_user(user_id):
