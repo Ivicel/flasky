@@ -1,0 +1,32 @@
+<ul>
+{% for post in posts %}
+<li class="post clearfix">
+	<div class="avatar">
+		<img src="{{ post.author.generate_avatar(size=100) }}" alt="">
+	</div>
+	<div class="post-content">
+		<p class="post-author">
+			<a href="{{ url_for('main.user_profile', username=post.author.username) }}">
+			{{ post.author.username }}</a>
+		</p>
+		<div class="post-body">
+			{% if post.body_html %}
+				{{ post.body_html | safe }}
+			{% else %}
+				{{ post.body }}
+			{% endif %}
+		</div>
+		<p class="post-timestamp">{{ moment(post.timestamp).fromNow() }}</p>
+		<div class="post-footer">
+		{% if current_user == post.author or current_user.is_administrator %}
+		<p class="post-edit">
+			<a href="{{ url_for('main.edit_post', id=post.id) }}">Edit</a>
+		</p>
+		{% endif %}
+		<p class="post-permalink">
+		<a href="{{ url_for('main.post_link', id=post.id) }}">Permalink</a></p>
+		</div>
+	</div>
+</li>
+{% endfor %}
+</ul>

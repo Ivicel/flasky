@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% import "_post.html" as macro_post %}
+{% import "_pagination.html" as macro_pagination %}
 {% block title_content %}
 Welcome to flask world!
 {% endblock %}
-
 
 {% block page_content %}
 	{% for message in get_flashed_messages() %}
@@ -16,7 +15,12 @@ Welcome to flask world!
 	</div>
 	{% endfor %}
 	<div class="page-header">
+		<h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}
+		Stranger{% endif %}.</h1>
+	{% if current_user.is_authenticated %}{{ wtf.quick_form(form) }}{% endif %}
 	</div>
-	{% if current_user.is_athenticated %}{{ wtf.quick_form(form) }}{% endif %}
-{{ macro_post.show_post(posts) }}
+{% include "_posts.html" %}
+<div class="post-pagination">
+{{ macro_pagination.pagination_widget(pagination, request.endpoint) }}
+</div>
 {% endblock %}

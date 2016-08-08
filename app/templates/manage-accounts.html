@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "_pagination.html" as macro_pagination %}
+
+{% block page_content %}
+<table class="manage-account-list">
+<thead>
+<tr>
+	<th>Username</th>
+	<th>Action</th>
+</tr>
+</thead>
+<tbody>
+	{% for user in users %}
+		<tr class="user-account">
+			<td>{{ user. username}}</td>
+			<td><a href="{{ url_for('main.edit_profile_admin',
+				id=user.id) }}" class="btn btn-danger">Edit profile [Admin]</a></td>
+		</li>
+	{% endfor %}
+</tbody>
+</table>
+	{{ macro_pagination.pagination_widget(pagination, request.endpoint) }}
+{% endblock %}

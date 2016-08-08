@@ -1,4 +1,5 @@
 import hashlib
+import bleach
 from flask import current_app, request
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,6 +9,7 @@ from . import db, login_manager
 from datetime import datetime
 from forgery_py import forgery
 from random import randrange
+from markdown import markdown
 
 
 class Permission:
@@ -116,7 +118,7 @@ class User(db.Model, UserMixin):
 		if data.get('confirm') != self.email:
 			return False
 		self.email = data.get('new_email')
-		self.avatar_hash = self.generate_avatar()
+		self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
 		db.session.add(self)
 		db.session.commit()
 		return True
@@ -140,8 +142,13 @@ class User(db.Model, UserMixin):
 		return self.role is not None and \
 			(self.role.permissions & permissions) == permissions
 
+	@property
 	def is_administrator(self):
 		return self.can(Permission.ADMINISTER)
+
+	@is_administrator.setter
+	def is_administrator(self, arg):
+		raise AttributeError('Attribute can not be set')
 
 	def ping(self):
 		self.last_seen = datetime.utcnow()
@@ -179,13 +186,19 @@ class AnonymousUser(AnonymousUserMixin):
 	def can(self, permissions):
 		return False
 
+	@property
 	def is_administrator(self):
 		return False
+
+	@is_administrator.setter
+	def is_administrator(self, arg):
+		raise AttributeError('Attribute can not be set')
 
 class Post(db.Model):
 	__tablename__ = 'posts'
 	id = db.Column(db.Integer, primary_key=True)
 	body = db.Column(db.Text)
+	body_html = db.Column(db.Text)
 	timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
 	author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -199,6 +212,21 @@ class Post(db.Model):
 				db.session.add(post)
 		db.session.commit()
 
+	@staticmethod
+	def on_change_body(target, value, oldvalue, initiator):
+		allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 'em', 'i',
+			'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p']
+		target.body_html = bleach.linkify(bleach.clean(markdown(value,
+			output_format='html'), tags=allowed_tags, strip=True))
+
+class Follow(db.Model):
+	__tablename__ = 'follows'
+	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+db.event.listen(Post.body, 'set', Post.on_change_body)
 @login_manager.user_loader
 def load_user(user_id):
 	return User.query.get(int(user_id))
