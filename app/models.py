@@ -19,6 +19,12 @@ class Permission:
 	MODERATE_COMMENTS = 0x08
 	ADMINISTER = 0x80
 
+class Follow(db.Model):
+	__tablename__ = 'follows'
+	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Role(db.Model):
 	__tablename__ = 'roles'
 	id = db.Column(db.Integer, primary_key=True)
@@ -63,6 +69,10 @@ class User(db.Model, UserMixin):
 	last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
 	avatar_hash = db.Column(db.String(128))
 	posts = db.relationship('Post', backref='author', lazy='dynamic')
+	followers = db.relationship('Follow', backref=db.backref('followed', lazy='joined'),
+		foreign_keys=[Follow.followed_id], lazy='dynamic', cascade='all, delete-orphan')
+	followed = db.relationship('Follow', backref=db.backref('follower', lazy='joined'),
+		foreign_keys=[Follow.follower_id], lazy='dynamic', cascade='all, delete-orphan')
 	
 	def __init__(self, **kwargs):
 		super(User, self).__init__(**kwargs)
@@ -73,6 +83,8 @@ class User(db.Model, UserMixin):
 				self.role = Role.query.filter_by(default=True).first()
 		if self.email is not None and self.avatar_hash is None:		
 			self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+		if self.is_unfollow(self):
+			self.follow(self)
 
 	@property
 	def password(self):
@@ -157,7 +169,7 @@ class User(db.Model, UserMixin):
 
 	def generate_avatar(self, size=100, default='identicon', rating='g'):
 		if request.is_secure:
-			url = 'https://secure.gravatrar.com/avatra'
+			url = 'https://secure.gravatrar.com/avatar'
 		else:
 			url = 'http://www.gravatar.com/avatar'
 		hash = self.avatar_hash or hashlib.md5(self.email.encode('utf-8')).hexdigest()
@@ -178,6 +190,33 @@ class User(db.Model, UserMixin):
 			user.about_me = forgery.lorem_ipsum.paragraph()
 			db.session.add(user)
 		db.session.commit()
+
+	def follow(self, user):
+		if self.is_following(user):
+			return True
+		follow = Follow(follower=self, followed=user)
+		db.session.add(follow)
+		db.session.commit()
+
+	def is_following(self, user):
+		return self.followed.filter_by(followed_id=user.id).first() is not None
+
+	def unfollow(self, user):
+		if not self.is_following(user):
+			return True
+		unfollow = self.followed.filter_by(followed_id=user.id).first()
+		db.session.delete(unfollow)
+		db.session.commit()
+		return True
+
+	def is_followed_by(self, user):
+		return self.followers.filter_by(follower_id=user.id).first() is not None
+
+	@staticmethod
+	def follow_yourself():
+		for user in User.query.all():
+			if user.is_unfollow(user):
+				user.follow(user)
 
 	def __repr__(self):
 		return 'In user %s' % self.username
@@ -218,12 +257,6 @@ class Post(db.Model):
 			'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p']
 		target.body_html = bleach.linkify(bleach.clean(markdown(value,
 			output_format='html'), tags=allowed_tags, strip=True))
-
-class Follow(db.Model):
-	__tablename__ = 'follows'
-	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 db.event.listen(Post.body, 'set', Post.on_change_body)

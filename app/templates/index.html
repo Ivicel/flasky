@@ -19,6 +19,16 @@ Welcome to flask world!
 		Stranger{% endif %}.</h1>
 	{% if current_user.is_authenticated %}{{ wtf.quick_form(form) }}{% endif %}
 	</div>
+<div class="tab">
+	<ul class="nav nav-tabs">
+		<li role="presentation">
+			<a href="{{ url_for('main.index', show='all') }}">All</a>
+		</li>
+		<li role="presentation">
+			<a href="{{ url_for('main.index', show='followers') }}">Followers</a>
+		</li>
+	</ul>
+</div>
 {% include "_posts.html" %}
 <div class="post-pagination">
 {{ macro_pagination.pagination_widget(pagination, request.endpoint) }}

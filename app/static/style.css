@@ -83,6 +83,10 @@
 	margin-right: 15px;
 }
 
+.profile-avatar ~ h2 {
+	margin-top: -5px;
+}
+
 .manage-account-list th, .user-account td {
 	padding: 8px;
 	border: 1px solid #bec5be;

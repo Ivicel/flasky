@@ -3,7 +3,7 @@ from flask import render_template, url_for, redirect, session, current_app, abor
 from flask_login import login_required, current_user
 from .. import db
 from . import main
-from ..models import Role, User, Permission, Post
+from ..models import Role, User, Permission, Post, Follow
 from .forms import PostForm, EditProfileForm, EditProfileAdminForm
 from ..email import send_mail
 from ..decorators import admin_required, permission_required
@@ -112,3 +112,45 @@ def edit_post(id):
 		return redirect(url_for('main.edit_post', id=post.id))
 	form.body.data = post.body
 	return render_template('edit-post.html', form=form)
+
+@main.route('/unfollow/<username>')
+@login_required
+def unfollow_user(username):
+	user = User.query.filter_by(username=username).first()
+	if user is not None:
+		current_user.unfollow(user)
+	else:
+		abort(404)
+	return redirect(url_for('main.user_profile', username=username))
+
+@main.route('/follow/<username>')
+@login_required
+def follow_user(username):
+	user = User.query.filter_by(username=username).first()
+	if user is not None:
+		current_user.follow(user)
+	else:
+		abort(404)
+	return redirect(url_for('main.user_profile', username=username))
+
+@main.route('/user/<username>/followers')
+def user_followers(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		abort(404)
+	page = request.args.get('page', 1, type=int)
+	pagination = user.followers.filter(Follow.follower_id != user.id).paginate(
+		page=page, per_page=current_app.config['PER_PAGE'])
+	return render_template('followers.html', user=user, users=pagination.items,
+		pagination=pagination)
+
+@main.route('/user/<username>/following')
+def user_following(username):
+	user = User.query.filter_by(username=username).first()
+	if user is None:
+		abort(404)
+	page = request.args.get('page', 1, type=int)
+	pagination = user.followed.filter(Follow.followed_id != user.id).paginate(page=page,
+		per_page=current_app.config['PER_PAGE'])
+	return render_template('following.html', user=user, users=pagination.items,
+		pagination=pagination)

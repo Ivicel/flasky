@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title_content %}Followed by {{ user.username }}{% endblock %}
+{% import "_pagination.html" as macro_pagination %}
+{% block page_content %}
+<div class="page-header">
+	<h1>Followed by {{ user.username }}</h1>
+</div>
+<table class="table">
+	<tr>
+		<th>User</th>
+		<th>Since</th>
+	</tr>
+	{% for u in users %}
+	<tr>
+		<td>
+			<a href="{{ url_for('main.user_profile', username=u.followed.username) }}">
+			<img src="{{ u.followed.generate_avatar(size=25) }}">
+			{{ u.followed.username }}
+			</a>
+		</td>
+		<td>{{ moment(u.timestamp).format('MM/DD/YYYY') }}</td>
+	</tr>
+	{% endfor %}
+</table>
+{{ macro_pagination.pagination_widget(pagination, request.endpoint,
+	username=user.username) }}
+{% endblock %}
