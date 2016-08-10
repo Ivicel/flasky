@@ -19,16 +19,18 @@ Welcome to flask world!
 		Stranger{% endif %}.</h1>
 	{% if current_user.is_authenticated %}{{ wtf.quick_form(form) }}{% endif %}
 	</div>
+{% if current_user.is_authenticated %}
 <div class="tab">
 	<ul class="nav nav-tabs">
-		<li role="presentation">
-			<a href="{{ url_for('main.index', show='all') }}">All</a>
+		<li role="presentation"{% if request.cookies.get('show_all') %} class="active"{% endif %}>
+			<a href="{{ url_for('main.show_all') }}">All</a>
 		</li>
-		<li role="presentation">
-			<a href="{{ url_for('main.index', show='followers') }}">Followers</a>
+		<li role="presentation"{% if not request.cookies.get('show_all') %} class="active"{% endif %}>
+			<a href="{{ url_for('main.show_followed') }}">Followers</a>
 		</li>
 	</ul>
 </div>
+{% endif %}
 {% include "_posts.html" %}
 <div class="post-pagination">
 {{ macro_pagination.pagination_widget(pagination, request.endpoint) }}

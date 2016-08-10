@@ -158,10 +158,6 @@ class User(db.Model, UserMixin):
 	def is_administrator(self):
 		return self.can(Permission.ADMINISTER)
 
-	@is_administrator.setter
-	def is_administrator(self, arg):
-		raise AttributeError('Attribute can not be set')
-
 	def ping(self):
 		self.last_seen = datetime.utcnow()
 		db.session.add(self)
@@ -218,6 +214,11 @@ class User(db.Model, UserMixin):
 			if user.is_unfollow(user):
 				user.follow(user)
 
+	@property
+	def followed_posts(self):
+		return Post.query.join(Follow, Follow.followed_id == Post.author_id).\
+			filter_by(follower_id=self.id).order_by(Post.timestamp.desc())
+
 	def __repr__(self):
 		return 'In user %s' % self.username
 
@@ -228,10 +229,6 @@ class AnonymousUser(AnonymousUserMixin):
 	@property
 	def is_administrator(self):
 		return False
-
-	@is_administrator.setter
-	def is_administrator(self, arg):
-		raise AttributeError('Attribute can not be set')
 
 class Post(db.Model):
 	__tablename__ = 'posts'

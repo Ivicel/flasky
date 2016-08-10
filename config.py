@@ -10,7 +10,7 @@ class Config:
 	MAIL_DEFAULT_SENDER = '<Flask> ' + os.environ.get('FLASK_ADMIN')
 	FLASK_SUBJECT_PREFIX = '[Flasky]'
 	SQLALCHEMY_TRACK_MODIFICATIONS = True
-	PER_PAGE = 15
+	PER_PAGE = 10
 
 
 	@staticmethod

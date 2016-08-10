@@ -3,6 +3,7 @@
 	{{ super() }}
 	{{ moment.include_moment() }}
 	{{ pagedown.include_pagedown() }}
+	<script type="text/javascript" src="{{ url_for('static', filename='js.js') }}"></script>
 {% endblock %}
 
 {% block head %}

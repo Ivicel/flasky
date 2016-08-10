@@ -1,5 +1,5 @@
 from flask import render_template, url_for, redirect, session, current_app, abort, \
-	flash, request
+	flash, request, make_response
 from flask_login import login_required, current_user
 from .. import db
 from . import main
@@ -11,6 +11,9 @@ from ..decorators import admin_required, permission_required
 @main.route('/', methods=['GET', 'POST'])
 def index():
 	form = PostForm()
+	show_all = bool(request.cookies.get('show_all', 1))
+	# if show is None:
+	# 	return redirect(url_for('.index', show='all'))
 	if current_user.can(Permission.WRITE_ARTICLES) and \
 		form.validate_on_submit():
 		post = Post(body=form.body.data, author=current_user._get_current_object())
@@ -18,8 +21,14 @@ def index():
 		db.session.commit()
 		return redirect(url_for('.index'))
 	page = request.args.get('page', 1, type=int)
-	pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
-		page=page, per_page=current_app.config['PER_PAGE'])
+	if current_user.is_authenticated and not show_all:
+		# posts = Post.query.filter(Post.author_id != current_user.id,
+		# 	Post.author_id.in_([u.followed_id for u in current_user.followed.all()])).\
+		# 	order_by(Post.timestamp.desc())
+		posts = current_user.followed_posts
+	else:
+		posts = Post.query.order_by(Post.timestamp.desc())
+	pagination = posts.paginate(page=page, per_page=current_app.config['PER_PAGE'])
 	return render_template('index.html', form=form, posts=pagination.items, 
 		pagination=pagination)
 
@@ -154,3 +163,17 @@ def user_following(username):
 		per_page=current_app.config['PER_PAGE'])
 	return render_template('following.html', user=user, users=pagination.items,
 		pagination=pagination)
+
+@main.route('/show-all')
+# @login_required
+def show_all():
+	resp = make_response(redirect(url_for('.index')))
+	resp.set_cookie('show_all', '1', max_age=30*24*60*60)
+	return resp
+
+@main.route('/show-followed')
+@login_required
+def show_followed():
+	resp = make_response(redirect(url_for('.index')))
+	resp.set_cookie('show_all', '', max_age=30*24*60*60)
+	return resp
