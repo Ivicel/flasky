@@ -3,8 +3,8 @@ from flask import render_template, url_for, redirect, session, current_app, abor
 from flask_login import login_required, current_user
 from .. import db
 from . import main
-from ..models import Role, User, Permission, Post, Follow
-from .forms import PostForm, EditProfileForm, EditProfileAdminForm
+from ..models import Role, User, Permission, Post, Follow, Comment
+from .forms import PostForm, EditProfileForm, EditProfileAdminForm, CommentForm
 from ..email import send_mail
 from ..decorators import admin_required, permission_required
 
@@ -12,8 +12,6 @@ from ..decorators import admin_required, permission_required
 def index():
 	form = PostForm()
 	show_all = bool(request.cookies.get('show_all', 1))
-	# if show is None:
-	# 	return redirect(url_for('.index', show='all'))
 	if current_user.can(Permission.WRITE_ARTICLES) and \
 		form.validate_on_submit():
 		post = Post(body=form.body.data, author=current_user._get_current_object())
@@ -100,12 +98,30 @@ def manage_account():
 	return render_template('manage-accounts.html', users=pagination.items,
 		pagination=pagination)
 
-@main.route('/post/<int:id>')
+@main.route('/post/<int:id>', methods=['GET', 'POST'])
 def post_link(id):
-	post = Post.query.filter_by(id=id).first()
-	if post is None:
-		abort(404)
-	return render_template('post-link-page.html', posts=[post])
+	post = Post.query.get_or_404(id)
+	form = CommentForm()
+	if form.validate_on_submit():
+		if current_user.is_anonymous:
+			flash('please login to comment this post.')
+			return redirect(url_for('auth.login'))
+		comment = Comment(body=form.body.data, post=post,
+			commentator=current_user._get_current_object())
+		db.session.add(comment)
+		db.session.commit()
+		flash('Your comment has been published.')
+		return redirect(url_for('.post_link', id=post.id, page=-1))
+	page = request.args.get('page', 1, type=int)
+	if page == -1:
+		page = (post.comments.count() - 1) // current_app.config['FLASK_COMMENTS_PER_PAGE'] + 1
+	pagination = post.comments.order_by(Comment.timestamp.asc()).paginate(page=page,
+		per_page=current_app.config['FLASK_COMMENTS_PER_PAGE'], error_out=False)
+	comments = pagination.items
+	print(pagination.total)
+	print(request.endpoint)
+	return render_template('post-link-page.html', posts=[post], form=form,
+		pagination=pagination, comments=comments)
 
 @main.route('/edit-post/<int:id>', methods=['GET', 'POST'])
 @login_required

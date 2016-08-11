@@ -91,3 +91,16 @@
 	padding: 8px;
 	border: 1px solid #bec5be;
 }
+
+.comment li {
+	list-style: none;
+	border-bottom: 1px solid gray;
+}
+
+.comment .comment-avatar {
+	float: left;
+}
+
+.comment .commentator {
+
+}

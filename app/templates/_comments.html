@@ -1,0 +1,18 @@
+<div class="comment">
+<ul>
+{% for comment in comments %}
+<li class="clearfix">
+<div class="comment-avatar">
+	<img src="{{ comment.commentator.generate_avatar(size=50) }}" alt="avatar">
+</div>
+<div class="commentator">{{ comment.commentator.username }}</div>
+<div class="comment-body">
+{% if comment.body_html %}
+	{{ comment.body_html }}
+{% else %}
+	{{ comment.body }}
+{% endif %}
+</div>
+</li>
+</ul>
+{% endfor %}

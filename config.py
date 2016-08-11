@@ -11,6 +11,7 @@ class Config:
 	FLASK_SUBJECT_PREFIX = '[Flasky]'
 	SQLALCHEMY_TRACK_MODIFICATIONS = True
 	PER_PAGE = 10
+	FLASK_COMMENTS_PER_PAGE = 1
 
 
 	@staticmethod

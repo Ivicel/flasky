@@ -1,6 +1,20 @@
 {% extends "base.html" %}
-
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_pagination.html" as macro_pagination %}
 
 {% block page_content %}
+	{% for message in get_flashed_messages() %}
+			<div class="alert alert-danger alert-dismissable">
+		<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+			<span aria-hidden="true">&times;</span>
+		</button>
+		{{ message }}
+	</div>
+	{% endfor %}
 	{% include "_posts.html" %}
+	{% if form %}{{ wtf.quick_form(form) }}{% endif %}
+	<div>Comments</div>
+	{% include "_comments.html" %}
+	{{ macro_pagination.pagination_widget(pagination, 
+		request.endpoint, id=posts[0].id) }}
 {% endblock %}
