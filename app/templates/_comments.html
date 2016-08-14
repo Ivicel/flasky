@@ -1,18 +1,30 @@
 <div class="comment">
-<ul>
 {% for comment in comments %}
-<li class="clearfix">
 <div class="comment-avatar">
 	<img src="{{ comment.commentator.generate_avatar(size=50) }}" alt="avatar">
 </div>
 <div class="commentator">{{ comment.commentator.username }}</div>
 <div class="comment-body">
-{% if comment.body_html %}
-	{{ comment.body_html }}
-{% else %}
-	{{ comment.body }}
+{% if comment.disabled %}
+<p><i>This comment has been disabled by a moderator.</i></p>
+{% endif %}
+{% if moderate or not comment.disabled %}
+	{% if comment.body_html %}
+		{{ comment.body_html }}
+	{% else %}
+		{{ comment.body }}
+	{% endif %}
 {% endif %}
 </div>
-</li>
-</ul>
+{% if moderate %}
+	<br>
+	{% if comment.disabled %}
+		<a href="{{ url_for('.moderate_enable', id=comment.id, page=page) }}"
+			class="btn btn-default btn-xs">Enable</a>
+	{% else %}
+		<a href="{{ url_for('.moderate_disable', id=comment.id, page=page) }}"
+			class="btn btn-danger btn-xs">Disable</a>
+	{% endif %}
+{% endif %}
 {% endfor %}
+</div>

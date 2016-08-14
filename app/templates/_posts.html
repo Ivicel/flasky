@@ -19,12 +19,18 @@
 		<p class="post-timestamp">{{ moment(post.timestamp).fromNow() }}</p>
 		<div class="post-footer">
 		{% if current_user == post.author or current_user.is_administrator %}
-		<p class="post-edit">
-			<a href="{{ url_for('main.edit_post', id=post.id) }}">Edit</a>
-		</p>
+			<a href="{{ url_for('main.edit_post', id=post.id) }}">
+				<span class="label label-info">Edit</span>
+			</a>
 		{% endif %}
-		<p class="post-permalink">
-		<a href="{{ url_for('main.post_link', id=post.id) }}">Permalink</a></p>
+		<a href="{{ url_for('.post_link',  id=post.id) }}#comments">
+			<span class="label label-primary">
+				{{ post.comments.count() }} Comments
+			</span>
+		</a>
+		<a href="{{ url_for('main.post_link', id=post.id) }}" class="post-permalink">
+			<span class="label label-default">Permalink</span>
+		</a>
 		</div>
 	</div>
 </li>

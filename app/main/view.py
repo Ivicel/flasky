@@ -193,3 +193,34 @@ def show_followed():
 	resp = make_response(redirect(url_for('.index')))
 	resp.set_cookie('show_all', '', max_age=30*24*60*60)
 	return resp
+
+@main.route('/moderate')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate():
+	page = request.args.get('page', 1, type=int)
+	pagination = Comment.query.order_by(Comment.timestamp.desc()).paginate(page=page,
+		per_page=current_app.config['FLASK_COMMENTS_PER_PAGE'], error_out=False)
+	comments = pagination.items
+	return render_template('moderate.html', comments=comments, pagination=pagination,
+		page=page)
+
+@main.route('/moderate/enable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate_enable(id):
+	comment = Comment.query.get_or_404(id)
+	comment.disabled = False
+	db.session.add(comment)
+	db.session.commit()
+	return redirect(url_for('.moderate', page=request.args.get('page', 1, type=int)))
+
+@main.route('/moderate/disabled/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate_disable(id):
+	comment = Comment.query.get_or_404(id)
+	comment.disabled = True
+	db.session.add(comment)
+	db.session.commit()
+	return redirect(url_for('.moderate', page=request.args.get('page', 1, type=int)))
