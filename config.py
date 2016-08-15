@@ -12,8 +12,9 @@ class Config:
 	MAIL_DEFAULT_SENDER = '<Flasky> admin@example.com'
 	MAIL_PORT = 587
 	MAIL_USE_TLS = True
-	PER_PAGE = 15
+	POST_PER_PAGE = 10
 	SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess key'
+
 
 	@staticmethod
 	def init_app(app):

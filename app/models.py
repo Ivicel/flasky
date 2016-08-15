@@ -1,7 +1,9 @@
-from . import db
 import hashlib
+import random
+from . import db
 from datetime import datetime
 from flask import current_app
+from forgery_py import forgery
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -18,6 +20,14 @@ class Permission:
 	WRITE_ARTICLE = 0x04
 	MODERATE_COMMENTS = 0x08
 	ADMINISTER = 0x80
+
+class Follow(db.Model):
+	__tablename__ = 'follows'
+	id = db.Column(db.Integer, primary_key=True)
+	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True,
+		index=True)
+	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True,
+		index=True)
 
 class Role(db.Model):
 	__tablename__ = 'roles'
@@ -59,6 +69,12 @@ class User(db.Model, UserMixin):
 	avatar_hash = db.Column(db.String(128))
 	member_since = db.Column(db.Date, default=datetime.utcnow)
 	last_seen = db.Column(db.Date, default=datetime.utcnow)
+	posts = db.relationship('Post', backref='author', lazy='dynamic')
+	comments = db.relationship('Comment', backref='commentator', lazy='dynamic')
+	# followers = db.relationship('Follow', backref='followed',
+	# 	foreign_keys=[Follow.followed_id])
+	# followeds = db.relationship('Follow', backref='follower', 
+	# 	foreign_keys=[Follow.follower_id])
 
 	def __init__(self, *args, **kwargs):
 		super(User, self).__init__(*args, **kwargs)
@@ -146,6 +162,24 @@ class User(db.Model, UserMixin):
 			default=default, rate=rate, size=size)
 
 	@staticmethod
+	def generate_fake_user():
+		for i in range(0, 120):
+			username = forgery.internet.user_name()
+			email = forgery.internet.email_address()
+			if User.query.filter_by(username=username).first() is not None or \
+				User.query.filter_by(email=email).first() is not None:
+				continue
+			user = User(username=username, email=email)
+			print('aaaaaaaaaaa---------------------------       ' + user.email)
+			user.password = 'abc123'
+			user.confirmed = True
+			user.name = forgery.name.full_name()
+			user.location = forgery.name.location()
+			user.about_me = forgery.lorem_ipsum.sentences()
+			db.session.add(user)
+			db.session.commit()
+
+	@staticmethod
 	def update_user_info():
 		users = User.query.all()
 		default_user = Role.query.filter_by(default_user=True).first()
@@ -164,3 +198,47 @@ class AnonymousUser(AnonymousUserMixin):
 
 	def is_administrator(self):
 		return False
+
+class Post(db.Model):
+	__tablename__ = 'posts'
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	body_html = db.Column(db.Text)
+	timestamp = db.Column(db.Date, default=datetime.utcnow)
+	comments = db.relationship('Comment', lazy='dynamic', backref='post')
+	author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+	def body_on_change(self):
+		self.body_html = self.body
+		db.session.add(self)
+		db.session.commit()
+
+	@staticmethod
+	def generate_fake_post():
+		users = User.query.all()
+		for user in users:
+			for i in range(random.randint(1, 20)):
+				post = Post(body=forgery.lorem_ipsum.paragraphs(), author=user)
+				db.session.add(post)
+			db.session.commit()
+
+class Comment(db.Model):
+	__tablename__ = 'comments'
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	body_html = db.Column(db.Text)
+	timestamp = db.Column(db.Date, default=datetime.utcnow)
+	commentator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+	post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+	@staticmethod
+	def generate_fake_comment():
+		posts = Post.query.all()
+		users = User.query.all()
+		for post in posts:
+			for i in range(0, 10):
+				user = random.choice(users)
+				comment = Comment(body=forgery.lorem_ipsum.paragraphs(),
+					commentator=user)
+				db.session.add(user)
+			db.session.commit()

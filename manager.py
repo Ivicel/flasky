@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 from app import create_app, db
-from app.models import Role, User
+from app.models import Role, User, Post, Comment
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 import os
 
 def make_shell_context():
-	return dict(db=db, Role=Role, User=User)
+	return dict(db=db, Role=Role, User=User, Post=Post, Comment=Comment)
 
 app = create_app(os.environ.get('FLASK_CONFIG') or 'default')
 manager = Manager(app)
@@ -21,6 +21,15 @@ def test():
 	import unittest
 	tests = unittest.TestLoader.discover('tests')
 	unittest.TextTestRunner(verbosity=2).run(tests)
+
+@manager.command
+def renew():
+	db.drop_all()
+	db.create_all()
+	Role.insert_roles()
+	User.generate_fake_user()
+	Post.generate_fake_post()
+	Comment.generate_fake_comment()
 
 if __name__ == '__main__':
 	manager.run()

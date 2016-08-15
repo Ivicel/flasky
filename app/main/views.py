@@ -4,7 +4,7 @@ from flask import render_template, url_for, redirect, abort, flash, request, \
 	current_app
 from flask_login import login_required, current_user
 from flask_sqlalchemy import Pagination
-from ..models import User, Role
+from ..models import User, Role, Post
 from .. import db
 from ..decorators import admin_required, permission_required
 
@@ -12,7 +12,11 @@ from ..decorators import admin_required, permission_required
 
 @main.route('/')
 def index():
-	return render_template('index.html')
+	page = request.args.get('page', 1, type=int)
+	pagination = Post.query.paginate(page=page,
+		per_page=current_app.config['POST_PER_PAGE'])
+	posts = pagination.items
+	return render_template('index.html', posts=posts, pagination=pagination)
 
 @main.route('/user/<username>')
 def profile(username):
