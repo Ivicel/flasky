@@ -24,10 +24,18 @@ class Permission:
 class Follow(db.Model):
 	__tablename__ = 'follows'
 	id = db.Column(db.Integer, primary_key=True)
-	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True,
-		index=True)
-	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True,
-		index=True)
+	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+	timestamp = db.Column(db.Date, default=datetime.utcnow)
+
+	@staticmethod
+	def generate_fake_follow():
+		users = User.query.all()
+		for i in range(0, 100):
+			u1 = random.choice(users)
+			u2 = random.choice(users)
+			if not u1.is_following(u2):
+				u1.follow(u2)
 
 class Role(db.Model):
 	__tablename__ = 'roles'
@@ -71,10 +79,10 @@ class User(db.Model, UserMixin):
 	last_seen = db.Column(db.Date, default=datetime.utcnow)
 	posts = db.relationship('Post', backref='author', lazy='dynamic')
 	comments = db.relationship('Comment', backref='commentator', lazy='dynamic')
-	# followers = db.relationship('Follow', backref='followed',
-	# 	foreign_keys=[Follow.followed_id])
-	# followeds = db.relationship('Follow', backref='follower', 
-	# 	foreign_keys=[Follow.follower_id])
+	followers = db.relationship('Follow', backref=db.backref('followed', lazy='joined'),
+		foreign_keys=[Follow.followed_id], lazy='dynamic', cascade='all, delete-orphan')
+	followeds = db.relationship('Follow', backref=db.backref('follower', lazy='joined'),
+		foreign_keys=[Follow.follower_id], lazy='dynamic', cascade='all, delete-orphan')
 
 	def __init__(self, *args, **kwargs):
 		super(User, self).__init__(*args, **kwargs)
@@ -84,6 +92,7 @@ class User(db.Model, UserMixin):
 		if self.role is None:
 			self.role = Role.query.filter_by(default_user=True).first()
 		self.avatar_hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+		self.follow(self)
 
 	@property
 	def password(self):
@@ -154,12 +163,30 @@ class User(db.Model, UserMixin):
 	def is_administrator(self):
 		return self.can(Permission.ADMINISTER)
 
-	def generate_avatar_hash(self, size=300, default="identicon", rate='g'):
+	def generate_avatar(self, size=300, default="identicon", rate='g'):
 		email_hash = self.avatar_hash or \
 			hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
 		url = 'https://www.gravatar.com/avatar/' + email_hash
 		return '{url}?default={default}&r={rate}&size={size}'.format(url=url, 
 			default=default, rate=rate, size=size)
+
+	def is_following(self, user):
+		return self.followeds.filter_by(followed_id=user.id).first() is not None
+
+	def is_followed_by(self, user):
+		return self.followers.filter_by(follower_id=user.id).first() is not None
+
+	def follow(self, user):
+		if not self.is_following(user):
+			f = Follow(follower=self, followed=user)
+			db.session.add(f)
+			db.session.commit()
+
+	def unfollow(self, user):
+		if self.is_following(user):
+			f = self.followeds.filter_by(followed_id=user.id).first()
+			db.session.delete(f)
+			db.session.commit()
 
 	@staticmethod
 	def generate_fake_user():
@@ -216,11 +243,11 @@ class Post(db.Model):
 	@staticmethod
 	def generate_fake_post():
 		users = User.query.all()
-		for user in users:
-			for i in range(random.randint(1, 20)):
-				post = Post(body=forgery.lorem_ipsum.paragraphs(), author=user)
-				db.session.add(post)
-			db.session.commit()
+		for i in range(0, 120):
+			user = random.choice(users)
+			post = Post(body=forgery.lorem_ipsum.paragraphs(), author=user)
+			db.session.add(post)
+		db.session.commit()
 
 class Comment(db.Model):
 	__tablename__ = 'comments'
@@ -239,6 +266,6 @@ class Comment(db.Model):
 			for i in range(0, 10):
 				user = random.choice(users)
 				comment = Comment(body=forgery.lorem_ipsum.paragraphs(),
-					commentator=user)
+					commentator=user, post=post)
 				db.session.add(user)
 			db.session.commit()

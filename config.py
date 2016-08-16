@@ -13,6 +13,7 @@ class Config:
 	MAIL_PORT = 587
 	MAIL_USE_TLS = True
 	POST_PER_PAGE = 10
+	COMMENT_PER_PAGE = 10
 	SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess key'
 
 

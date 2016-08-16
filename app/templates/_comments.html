@@ -1,0 +1,22 @@
+{% for comment in comments %}
+<div class="comment">
+	<div class="comment-avatar">
+		<img src="{{ comment.commentator.generate_avatar(size=50) }}" alt="avatar">
+	</div>
+	<div class="comment-author">
+		<a href="{{ url_for('main.profile', username=comment.commentator.username) }}">
+			{{ comment.commentator.username }}
+		</a>
+	</div>
+	<div class="comment-timestamp">
+		<span>{{ moment(comment.timestamp).fromNow() }}</span>
+	</div>
+	<div class="comment-body">
+		{% if comment.body_html %}
+			{{ comment.body_html }}
+		{% else %}
+			{{ comment.body }}
+		{% endif %}
+	</div>
+</div>
+{% endfor %}

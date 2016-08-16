@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "_pagination.html" as macro %}
+{% block title %}Flasky - {{ user.username }}'s followers{% endblock %}
+
+{% block page_content %}
+	<div class="page-header">
+		<h2>{{ user.username }}'s followers</h2>
+	</div>
+	<div class="followers">
+		<table class="table table-hover">
+			<thead>
+				<tr>
+					<th>#</th>
+					<th>User</th>
+					<th>Since</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for u in pagination.items %}
+				<tr>
+					<td>1</td>
+					<td><a href="{{ url_for('main.profile', username=u.follower.username) }}">
+					{{ u.follower.username }}</a></td>
+					<td>{{ u.timestamp }}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	</div>
+{% endblock %}
