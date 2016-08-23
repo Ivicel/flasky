@@ -8,7 +8,9 @@ from wtforms.validators import Email, DataRequired, Length, Email, Regexp, \
 
 # 登录表单
 class LoginForm(Form):
-	user = StringField('Email/Username', validators=[DataRequired(), Length(1, 64)])
+	user = StringField('Email/Username', validators=[DataRequired(), Length(1, 64),
+		Regexp('^[a-zA-Z][\w\d.]*$|^[\w\d]+@[\d\w]+\.\w+',
+		message='error user or email')])
 	password = PasswordField('Password', validators=[DataRequired()])
 	remember_me = BooleanField('remember me')
 	submit = SubmitField('Login')

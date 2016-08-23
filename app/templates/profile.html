@@ -59,7 +59,9 @@
 				Fowllowing:
 			</a>
 			<span class="badge">{{ user.followeds.count() - 1 }}</span>
-			{% if current_user.is_authenticated and current_user.is_followed_by(user) %}
+			{% if current_user.is_authenticated and 
+				current_user != user and
+				current_user.is_followed_by(user) %}
 			<span>| Following you</span>
 			{% endif %}
 		</div>

@@ -1,76 +1,84 @@
 .clearfix:after {
-	display: block;
-	content: "";
-	clear: both;
-	visibility: hidden;
+    display: block;
+    content: "";
+    clear: both;
+    visibility: hidden;
 }
 
 .avatar-icon {
-	width: 23px;
-	border-radius: 50%;
+    width: 23px;
+    border-radius: 50%;
 }
 
 .profile-avatar {
-	float: left;
-	margin: 15px 25px;
+    float: left;
+    margin: 15px 25px;
 }
 
 .profile-avatar img {
-	width: 230px;
-	border-radius: 7%;
+    width: 230px;
+    border-radius: 7%;
 }
 
 .post,
 .comment {
-	position: relative;
-	border-bottom: 1px solid #dcdbdb;
+    position: relative;
+    border-bottom: 1px solid #dcdbdb;
     padding-bottom: 15px;
     margin-top: 20px;
 }
 
 .post .post-avatar,
 .comment .comment-avatar {
-	float: left;
-	margin-right: 10px;
+    float: left;
+    margin-right: 10px;
 }
 
 .post .post-avatar img,
 .comment .comment-avatar img {
-	border-radius: 5px;
+    border-radius: 5px;
 }
 
 .post .post-author,
 .comment .comment-author {
-	font-size: 18px;
+    font-size: 18px;
 }
 
 .post .post-timestamp,
 .comment .comment-timestamp {
-	position: absolute;
-	right: 10px;
-	top: 0;
+    position: absolute;
+    right: 10px;
+    top: 0;
 }
 
 .post .post-body,
 .comment .comment-body {
-	padding-left: 60px;
-	font-size: 15px;
+    padding-left: 60px;
+    font-size: 15px;
 }
 
-.post .post-footer {
-	float: right;
-	margin-top: 10px;
-	margin-right: 5px;
+.post .post-footer,
+.comment .comment-footer {
+    float: right;
+    margin-top: 10px;
+    margin-right: 5px;
 }
 
 .post .post-admin-edit,
 .post .post-edit,
 .post .post-permalink,
 .post .post-comment {
-	display: inline-block;
-	font-size: 15px;
+    display: inline-block;
+    font-size: 15px;
 }
 
 .profile {
-	line-height: 25px;
+    line-height: 25px;
+}
+
+@media screen and (min-width: 767px) {
+    .page-container {
+        padding-left: 80px;
+        padding-right: 80px;
+    }
 }

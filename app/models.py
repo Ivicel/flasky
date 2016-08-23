@@ -1,12 +1,17 @@
+import bleach
 import hashlib
 import random
-from . import db
+import re
+from markdown import markdown
 from datetime import datetime
-from flask import current_app
-from forgery_py import forgery
+from flask import current_app, url_for
 from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from forgery_py import forgery
+from app import db, login_manager
+from .exceptions import ValidationError
+
 
 class Permission:
 	"""FOLLOW: 关注其他人
@@ -21,12 +26,13 @@ class Permission:
 	MODERATE_COMMENTS = 0x08
 	ADMINISTER = 0x80
 
+
 class Follow(db.Model):
 	__tablename__ = 'follows'
 	id = db.Column(db.Integer, primary_key=True)
 	follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
 	followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-	timestamp = db.Column(db.Date, default=datetime.utcnow)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 	@staticmethod
 	def generate_fake_follow():
@@ -36,6 +42,7 @@ class Follow(db.Model):
 			u2 = random.choice(users)
 			if not u1.is_following(u2):
 				u1.follow(u2)
+
 
 class Role(db.Model):
 	__tablename__ = 'roles'
@@ -62,6 +69,7 @@ class Role(db.Model):
 			role.default_user = roles[r][1]
 			db.session.add(role)
 		db.session.commit()
+
 
 class User(db.Model, UserMixin):
 	__tablename__ = 'users'
@@ -153,6 +161,19 @@ class User(db.Model, UserMixin):
 		db.session.commit()
 		return True
 
+	def generate_auth_token(self, expiration):
+		s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+		return s.dumps({'id': self.id})
+
+	@staticmethod
+	def verify_auth_token(token):
+		s = Serializer(current_app.config['SECRET_KEY'])
+		try:
+			data = s.loads(token)
+		except:
+			return None
+		return User.query.get(data['id'])
+
 	def can(self, permission):
 		try:
 			return self.role is not None and \
@@ -188,6 +209,10 @@ class User(db.Model, UserMixin):
 			db.session.delete(f)
 			db.session.commit()
 
+	def get_followed_posts(self):
+		return Post.query.join(Follow, Post.author_id == Follow.followed_id).\
+			filter_by(follower_id=self.id)
+
 	@staticmethod
 	def generate_fake_user():
 		for i in range(0, 120):
@@ -205,6 +230,10 @@ class User(db.Model, UserMixin):
 			user.about_me = forgery.lorem_ipsum.sentences()
 			db.session.add(user)
 			db.session.commit()
+		user = User(username='ivicel', email='ivicel@ivicel.com', password='ivicel',
+			confirmed=True, role=Role.query.filter_by(permissions=0xff).first())
+		db.session.add(user)
+		db.session.commit()
 
 	@staticmethod
 	def update_user_info():
@@ -219,6 +248,20 @@ class User(db.Model, UserMixin):
 			db.session.add(user)
 		db.session.commit()
 
+	def to_json(self):
+		json_user = {
+			'url': url_for('api.get_user', id=self.id, _external=True),
+			'username': self.username,
+			'member_since': self.member_since,
+			'last_seen': self.last_seen,
+			'posts': url_for('api.get_user_posts', id=self.id, _external=True),
+			'followed_posts': url_for('api.get_user_followed_posts', id=self.id,
+				_external=True),
+			'post_count': self.posts.count()
+		}
+		return json_user
+
+
 class AnonymousUser(AnonymousUserMixin):
 	def can(self, permission):
 		return False
@@ -226,37 +269,16 @@ class AnonymousUser(AnonymousUserMixin):
 	def is_administrator(self):
 		return False
 
-class Post(db.Model):
-	__tablename__ = 'posts'
-	id = db.Column(db.Integer, primary_key=True)
-	body = db.Column(db.Text)
-	body_html = db.Column(db.Text)
-	timestamp = db.Column(db.Date, default=datetime.utcnow)
-	comments = db.relationship('Comment', lazy='dynamic', backref='post')
-	author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-	def body_on_change(self):
-		self.body_html = self.body
-		db.session.add(self)
-		db.session.commit()
-
-	@staticmethod
-	def generate_fake_post():
-		users = User.query.all()
-		for i in range(0, 120):
-			user = random.choice(users)
-			post = Post(body=forgery.lorem_ipsum.paragraphs(), author=user)
-			db.session.add(post)
-		db.session.commit()
 
 class Comment(db.Model):
 	__tablename__ = 'comments'
 	id = db.Column(db.Integer, primary_key=True)
 	body = db.Column(db.Text)
 	body_html = db.Column(db.Text)
-	timestamp = db.Column(db.Date, default=datetime.utcnow)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 	commentator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 	post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+	disabled = db.Column(db.Boolean, default=False)
 
 	@staticmethod
 	def generate_fake_comment():
@@ -269,3 +291,62 @@ class Comment(db.Model):
 					commentator=user, post=post)
 				db.session.add(user)
 			db.session.commit()
+
+	@staticmethod
+	def on_change_body(target, value, oldvalue, initiator):
+		allowed_tags = ['a', 'i', 'em', 'p', 'b', 'strong', 'abbr', 'acronym', 'code',
+			'blockquote']
+		target.body_html = bleach.linkify(bleach.clean(markdown(value,
+			out_put_format='html5'), tags=allowed_tags, strip=True))
+
+class Post(db.Model):
+	__tablename__ = 'posts'
+	id = db.Column(db.Integer, primary_key=True)
+	body = db.Column(db.Text)
+	body_html = db.Column(db.Text)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+	comments = db.relationship('Comment', lazy='dynamic', backref='post')
+	author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+	@staticmethod
+	def on_change_body(target, value, oldvalue, initiator):
+		allowed_tags = ['a', 'i', 'em', 'b', 'abbr', 'acronym', 'blockquote', 'code',
+			'li', 'ol', 'ul', 'pre', 'strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p']
+		target.body_html = bleach.linkify(bleach.clean(markdown(value,
+			out_put_format='html5'), tags=allowed_tags, strip=True))
+
+	@staticmethod
+	def generate_fake_post():
+		users = User.query.all()
+		for i in range(0, 120):
+			user = random.choice(users)
+			post = Post(body=forgery.lorem_ipsum.paragraphs(), author=user)
+			db.session.add(post)
+		db.session.commit()
+
+	def to_json(self):
+		json_post = {
+			'url': url_for('api.get_post', id=self.id, _external=True),
+			'body': self.body,
+			'body_html': self.body_html,
+			'timestamp': self.timestamp,
+			'author': url_for('api.get_user', id=self.author_id, _external=True),
+			'comments': url_for('api.get_post_comments', id=self.id, _external=True),
+			'comment_count': self.comments.count()
+		}
+		return json_post
+
+	@staticmethod
+	def from_json(json_post):
+		body = json_post.get('body')
+		if body is None or body == '':
+			raise ValidationError('post dest not have a body')
+		return Post(body=body)
+
+db.event.listen(Post.body, 'set', Post.on_change_body)
+db.event.listen(Comment.body, 'set', Comment.on_change_body)
+login_manager.anonymous_user = AnonymousUser
+from .main import main
+@main.app_context_processor
+def inject_permissions():
+	return dict(Permission=Permission)

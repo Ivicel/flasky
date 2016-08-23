@@ -1,11 +1,26 @@
 {% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
 {% import "_pagination.html" as macro %}
 
 {% block page_content %}
-	{% include "_posts.html" %}
-	<div class="page-header">
-		<h2>Comments</h2>
+	{% for message in get_flashed_messages() %}
+	<div class="alert alert-dismissable alert-warning">
+		<button type="button" data-dismiss="alert" class="close" aria-label="Close">
+			<span aria-hidden="true">&times;</span>
+		</button>
+			{{ message }}
 	</div>
-	{% include "_comments.html" %}
-	{{ macro.page_widget(pagination, request.endpoint, username=username, id=id) }}
+	{% endfor %}
+	{% include "_posts.html" %}
+	<div class="page-container">
+		<div class="page-header" id="comments">
+			<h2>Comments</h2>
+		</div>
+		{% if form %}{{ wtf.quick_form(form) }}{% endif %}
+		{% include "_comments.html" %}
+		<div class="page-pagination">
+		{{ macro.page_widget(pagination, request.endpoint,
+			position='#comments', username=username, id=id) }}
+		</div>
+	</div>
 {% endblock %}

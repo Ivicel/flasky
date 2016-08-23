@@ -1,18 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Flasky - Manage accounts{% endblock %}
-{% import "_macro_pagination.html" as macro_pagination %}
+{% import "_pagination.html" as macro_page %}
 {% block page_content %}
 	<div class="page-header">
 		<h1>Manage Accounts</h1>
 	</div>
-	<ul>
-		{% for user in users %}
-		<li>
-			{{ user.username }}
-			<a href="{{ url_for('main.admin_edit_profile', username=user.username) }}"
-				class="btn btn-danger">Edit profile[Admin]</a>
-		</li>
+	<table class="table table-hover" id="user-list-table">
+		<thead>
+		<tr>
+			<th>#</th>
+			<th>User</th>
+			<th>Action</th>
+		</tr>
+		</thead>
+		<tbody>
+			{% for user in users %}
+			<tr>
+				<td></td>
+				<td>{{ user.username }}</td>
+				<td>
+					<a href="{{ url_for('main.admin_edit_profile',
+						username=user.username) }}" class="btn btn-danger">
+						Edit profile[Admin]
+					</a>
+				</td>
+			</tr>
 		{% endfor %}
-	</ul>
-{{ macro_pagination.pagination_widget(pagination, request.endpoint) }}
+		</tbody>
+	</table>
+	<div class="page-pagination">
+		{{ macro_page.page_widget(pagination, request.endpoint,
+			position="#user-list-table") }}
+	</div>
 {% endblock %}

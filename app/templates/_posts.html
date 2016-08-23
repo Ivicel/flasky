@@ -13,20 +13,27 @@
 	</div>
 	<div class="post-body">
 	{% if post.body_html %}
-		{{ post.body_html }}
+		{{ post.body_html | safe}}
 	{% else %}
 		{{ post.body }}
+
 	{% endif %}
 	</div>
 	<div class="post-footer">
 		{% if current_user == post.author %}
 			<div class="post-edit">
-				<span class="label label-primary">Edit</span>
+				<a href="{{ url_for('main.edit_post', 
+					username=post.author.username,id=post.id) }}">
+					<span class="label label-primary">Edit</span>
+				</a>
 			</div>
 		{% endif %}
 		{% if current_user.can(Permission.ADMINISTER) %}
 			<div class="post-admin-edit">
-				<span class="label label-danger">Edit[Admin]</span>
+				<a href="{{ url_for('main.edit_post',
+					username=post.author.username, id=post.id) }}">
+					<span class="label label-danger">Edit[Admin]</span>
+				</a>
 			</div>
 		{% endif %}
 		<div class="post-permalink">
@@ -37,7 +44,7 @@
 		</div>
 		<div class="post-comment">
 			<a href="{{ url_for('main.user_post',
-				username=post.author.username,id=post.id) }}">
+				username=post.author.username,id=post.id) }}#comments">
 				<span class="label label-info">
 					{{ post.comments.count() }} Comments
 				</span>

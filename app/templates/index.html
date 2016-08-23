@@ -1,8 +1,14 @@
 {% extends 'base.html' %}
 {% import "_pagination.html" as macro %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block scripts %}
+	{{ super() }}
+	{{ pagedown.include_pagedown() }}
+{% endblock %}
 
 {% block title %}Flasky - Welcome to flask!{% endblock %}
 {% block page_content %}
+<div class="page-header">
 	<h3>Hello, 
 	{% if current_user.username %}
 		{{ current_user.username }}
@@ -18,6 +24,26 @@
 			{{ message }}
 	</div>
 	{% endfor %}
+	{% if form %}{{ wtf.quick_form(form) }}{% endif %}
+</div>
+	<div class="page-nav" id="posts">
+		<ul class="nav nav-tabs">
+			<li role="presentation"{% if show_all %} class="active"{% endif %}>
+				<a href="{{ url_for('main.show_all') }}">
+					All
+				</a>
+			</li>
+			{% if current_user.is_authenticated %}
+			<li role="presentation"{% if not show_all %} class="active"{% endif %}>
+				<a href="{{ url_for('main.show_follow') }}">
+					Follow
+				</a>
+			</li>
+			{% endif %}
+		</ul>
+	</div>
 	{% include "_posts.html" %}
-	{{ macro.page_widget(pagination, request.endpoint) }}
+	<div class="page-pagination">
+		{{ macro.page_widget(pagination, request.endpoint, position="#posts") }}
+	</div>
 {% endblock %}

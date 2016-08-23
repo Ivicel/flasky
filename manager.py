@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from app import create_app, db
-from app.models import Role, User, Post, Comment, Follow
+from app.models import Role, User, Comment, Follow, Post
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 import os

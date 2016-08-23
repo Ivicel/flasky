@@ -1,6 +1,6 @@
 from datetime import datetime
 from . import auth
-from ..models import User
+from ..models import User, Post
 from ..email import send_mail
 from .. import login_manager, db
 from .forms import LoginForm, RegisterForm, ChangeEmailForm, ChangePasswordForm, \
@@ -27,7 +27,9 @@ def login():
 		return redirect(url_for('main.index'))
 	form = LoginForm()
 	if form.validate_on_submit():
-		user = User.query.filter_by(email=form.user.data).first()
+		user = User.query.filter_by(email=form.user.data).first() \
+			if '@' in form.user.data else \
+			User.query.filter_by(username=form.user.data).first()
 		if user is None or user.check_password(form.password.data) is not True:
 			flash('username or password error.')
 			return redirect(url_for('.login'))
