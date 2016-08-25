@@ -209,6 +209,7 @@ class User(db.Model, UserMixin):
 			db.session.delete(f)
 			db.session.commit()
 
+	@property
 	def get_followed_posts(self):
 		return Post.query.join(Follow, Post.author_id == Follow.followed_id).\
 			filter_by(follower_id=self.id)
@@ -222,7 +223,6 @@ class User(db.Model, UserMixin):
 				User.query.filter_by(email=email).first() is not None:
 				continue
 			user = User(username=username, email=email)
-			print('aaaaaaaaaaa---------------------------       ' + user.email)
 			user.password = 'abc123'
 			user.confirmed = True
 			user.name = forgery.name.full_name()
@@ -250,13 +250,14 @@ class User(db.Model, UserMixin):
 
 	def to_json(self):
 		json_user = {
-			'url': url_for('api.get_user', id=self.id, _external=True),
+			'url': url_for('api.get_user', username=self.username, _external=True),
 			'username': self.username,
 			'member_since': self.member_since,
 			'last_seen': self.last_seen,
-			'posts': url_for('api.get_user_posts', id=self.id, _external=True),
-			'followed_posts': url_for('api.get_user_followed_posts', id=self.id,
+			'posts': url_for('api.get_user_posts', username=self.username,
 				_external=True),
+			'following': url_for('api.get_user_following',
+				username=self.username, _external=True),
 			'post_count': self.posts.count()
 		}
 		return json_user
@@ -299,6 +300,17 @@ class Comment(db.Model):
 		target.body_html = bleach.linkify(bleach.clean(markdown(value,
 			out_put_format='html5'), tags=allowed_tags, strip=True))
 
+	def to_json(self):
+		comment_json = {
+			'url': url_for('api.get_comment', id=self.id, _external=True),
+			'body': self.body,
+			'body_html': self.body_html,
+			'commentator': url_for('api.get_user',
+				username=self.commentator.username, _external=True),
+			'post': url_for('api.get_post', id=self.post.id, _external=True)
+		}
+		return comment_json
+
 class Post(db.Model):
 	__tablename__ = 'posts'
 	id = db.Column(db.Integer, primary_key=True)
@@ -330,7 +342,8 @@ class Post(db.Model):
 			'body': self.body,
 			'body_html': self.body_html,
 			'timestamp': self.timestamp,
-			'author': url_for('api.get_user', id=self.author_id, _external=True),
+			'author': url_for('api.get_user', username=self.author.username,
+				_external=True),
 			'comments': url_for('api.get_post_comments', id=self.id, _external=True),
 			'comment_count': self.comments.count()
 		}
@@ -340,7 +353,7 @@ class Post(db.Model):
 	def from_json(json_post):
 		body = json_post.get('body')
 		if body is None or body == '':
-			raise ValidationError('post dest not have a body')
+			raise ValidationError('post does not have a body')
 		return Post(body=body)
 
 db.event.listen(Post.body, 'set', Post.on_change_body)
