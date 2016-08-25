@@ -1,6 +1,6 @@
 import hashlib
 import bleach
-from flask import current_app, request
+from flask import current_app, request, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin
@@ -84,7 +84,7 @@ class User(db.Model, UserMixin):
 				self.role = Role.query.filter_by(default=True).first()
 		if self.email is not None and self.avatar_hash is None:		
 			self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
-		if self.is_unfollow(self):
+		if not self.is_following(self):
 			self.follow(self)
 
 	@property
@@ -151,6 +151,19 @@ class User(db.Model, UserMixin):
 		user = cls.query.filter_by(email=email).first()
 		return user
 
+	def generate_auth_token(self, expiration):
+		s = Serializer(current_app.config['SECRET_KEY'], expiration)
+		return s.dumps({'id': self.id})
+
+	@staticmethod
+	def verify_auth_token(token):
+		s = Serializer(current_app.config['SECRET_KEY'])
+		try:
+			data = s.loads(token)
+		except:
+			return None
+		return User.query.get(data.get('id'))
+
 	def can(self, permissions):
 		return self.role is not None and \
 			(self.role.permissions & permissions) == permissions
@@ -212,13 +225,38 @@ class User(db.Model, UserMixin):
 	@staticmethod
 	def follow_yourself():
 		for user in User.query.all():
-			if user.is_unfollow(user):
+			if not user.is_following(user):
 				user.follow(user)
 
 	@property
 	def followed_posts(self):
 		return Post.query.join(Follow, Follow.followed_id == Post.author_id).\
-			filter_by(follower_id=self.id).order_by(Post.timestamp.desc())
+			filter_by(follower_id=self.id)
+
+	def to_json(self):
+		json_user = {
+			'url': url_for('api.get_user', username=self.username, _external=True),
+			'username': self.username,
+			'full_name': self.name,
+			'location': self.location,
+			'last_seen': self.last_seen,
+			'member_since': self.member_since,
+			'about_me': self.about_me,
+			'avatar': self.generate_avatar(size=100),
+			'posts': url_for('api.get_user_posts', username=self.username,
+				_external=True),
+			'comments': url_for('api.get_user_comments', username=self.username,
+				_external=True),
+			'posts_count': self.posts.count(),
+			'comments_count': self.comments.count(),
+			'following': url_for('api.get_user_followed_by', username=self.username,
+				_external=True),
+			'followers': url_for('api.get_user_followers', username=self.username,
+				_external=True),
+			'following_count': self.followed.count() - 1,
+			'followers_count': self.followers.count() - 1
+		}
+		return json_user
 
 	def __repr__(self):
 		return 'In user %s' % self.username
@@ -257,6 +295,19 @@ class Post(db.Model):
 		target.body_html = bleach.linkify(bleach.clean(markdown(value,
 			output_format='html'), tags=allowed_tags, strip=True))
 
+	def to_json(self):
+		json_post = {
+			'url': url_for('api.get_post', id=self.id, _external=True),
+			'body': self.body,
+			'body_html': self.body_html,
+			'timestamp': self.timestamp,
+			'author': url_for('api.get_user', username=self.author.username,
+				_external=True),
+			'comments': url_for('api.get_post_comments', id=self.id, _external=True),
+			'comment_count': self.comments.count()
+		}
+		return json_post
+
 class Comment(db.Model):
 	__tablename__ = 'comments'
 	id = db.Column(db.Integer, primary_key=True)
@@ -272,6 +323,18 @@ class Comment(db.Model):
 		allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 'em', 'i', 'strong']
 		target.body_html = bleach.linkify(bleach.clean(markdown(value,
 			output_format='html'), tags=allowed_tags, strip=True))
+
+	def to_json(self):
+		json_comment = {
+			'url': url_for('api.get_comment', id=self.id, _external=True),
+			'body': self.body,
+			'body_html': self.body_html,
+			'timestamp': self.timestamp,
+			'commentator': url_for('api.get_user', username=self.commentator.username,
+				_external=True),
+			'post': url_for('api.get_post', id=self.post.id)
+		}
+		return json_comment
 
 
 db.event.listen(Post.body, 'set', Post.on_change_body)

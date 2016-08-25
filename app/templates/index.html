@@ -15,7 +15,7 @@ Welcome to flask world!
 	</div>
 	{% endfor %}
 	<div class="page-header">
-		<h1>Hello, {% if current_user.is_authenticated %}{{ current_user.username }}{% else %}
+		<h1>Hello, {% if current_user.is_authenticated %}{{ current_user.email }}{% else %}
 		Stranger{% endif %}.</h1>
 	{% if current_user.is_authenticated %}{{ wtf.quick_form(form) }}{% endif %}
 	</div>

@@ -118,8 +118,6 @@ def post_link(id):
 	pagination = post.comments.order_by(Comment.timestamp.asc()).paginate(page=page,
 		per_page=current_app.config['FLASK_COMMENTS_PER_PAGE'], error_out=False)
 	comments = pagination.items
-	print(pagination.total)
-	print(request.endpoint)
 	return render_template('post-link-page.html', posts=[post], form=form,
 		pagination=pagination, comments=comments)
 
