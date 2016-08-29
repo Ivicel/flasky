@@ -99,8 +99,11 @@ class User(db.Model, UserMixin):
 				self.role = Role.query.filter_by(permissions=0xff).first()
 		if self.role is None:
 			self.role = Role.query.filter_by(default_user=True).first()
-		self.avatar_hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
-		self.follow(self)
+		if self.email is not None and self.avatar_hash is None:
+			self.avatar_hash = hashlib.md5(
+				self.email.lower().encode('utf-8')).hexdigest()
+		if not self.is_following(self):
+			self.follow(self)
 
 	@property
 	def password(self):
@@ -118,7 +121,8 @@ class User(db.Model, UserMixin):
 		if new_email is not None and not reset_password:
 			return s.dumps({
 				'confirm': self.id,
-				'new_email': new_email
+				'new_email': new_email,
+				'reset': reset_password
 			})
 		return s.dumps({
 			'confirm': self.id,
@@ -127,22 +131,23 @@ class User(db.Model, UserMixin):
 
 	def confirm_token(self, token, change_email=False):
 		s = Serializer(current_app.config['SECRET_KEY'])
+		m = False
 		try:
 			data = s.loads(token)
 		except:
 			return False
-		if data.get('confirm') == self.id:
-			if data.get('reset') is not None and not change_email:
-				self.confirmed = True
-			elif data.get('new_email') is not None and change_email:
+		if data.get('confirm') == self.id and not data.get('reset'):
+			if change_email and data.get('new_email') is not None:
 				self.email = data.get('new_email')
+			elif not change_email and data.get('new_email') is None:
+				self.confirmed = True
 			else:
 				return False
-		else:
-			return False
-		db.session.add(self)
-		db.session.commit()
-		return True
+			db.session.add(self)
+			db.session.commit()
+			return True
+		return False
+		
 
 	@staticmethod
 	def confirm_reset_password(token, password):
