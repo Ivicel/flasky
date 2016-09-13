@@ -205,3 +205,12 @@ def show_follow():
 	resp.set_cookie('show_all', '', max_age=60 * 60 * 24 * 30)
 	return resp
 
+@main.route('/shutdown')
+def server_shutdown():
+	if not current_app.testing:
+		abort(404)
+	shutdown = request.environ.get('werkzeug.server.shutdown')
+	if not shutdown:
+		abort(500)
+	shutdown()
+	return 'Shutting down...'

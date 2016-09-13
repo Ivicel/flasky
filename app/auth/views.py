@@ -15,10 +15,11 @@ def load_user(id):
 
 @auth.before_app_request
 def is_confirmed():
-	if not current_user.is_anonymous and current_user.is_authenticated \
-		and not current_user.confirmed and \
-		request.endpoint[5:] not in ['unconfirmed', 'logout', 'resend_email']:
-		return redirect(url_for('auth.unconfirmed'))
+	if current_user.is_authenticated:
+		current_user.ping()
+		if not current_user.confirmed and request.endpoint[5:] not in \
+			['unconfirmed', 'logout', 'resend_email', 'confirm_email_address']:
+			return redirect(url_for('auth.unconfirmed'))
 
 # 登录
 @auth.route('/login', methods=['GET', 'POST'])

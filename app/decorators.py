@@ -1,6 +1,7 @@
 from flask_login import current_user
 from functools import wraps
 from .models import Permission
+from flask import abort
 
 def permission_required(permission):
 	def decorator(f):

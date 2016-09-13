@@ -83,8 +83,8 @@ class User(db.Model, UserMixin):
 	location = db.Column(db.String(64))
 	about_me = db.Column(db.Text())
 	avatar_hash = db.Column(db.String(128))
-	member_since = db.Column(db.Date, default=datetime.utcnow)
-	last_seen = db.Column(db.Date, default=datetime.utcnow)
+	member_since = db.Column(db.DateTime, default=datetime.utcnow)
+	last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 	posts = db.relationship('Post', backref='author', lazy='dynamic')
 	comments = db.relationship('Comment', backref='commentator', lazy='dynamic')
 	followers = db.relationship('Follow', backref=db.backref('followed', lazy='joined'),
@@ -144,7 +144,11 @@ class User(db.Model, UserMixin):
 			else:
 				return False
 			db.session.add(self)
-			db.session.commit()
+			try:
+				db.session.commit()
+			except:
+				db.session.rollback()
+				return False
 			return True
 		return False
 		
@@ -196,6 +200,11 @@ class User(db.Model, UserMixin):
 		return '{url}?default={default}&r={rate}&size={size}'.format(url=url, 
 			default=default, rate=rate, size=size)
 
+	def ping(self):
+		self.last_seen = datetime.utcnow()
+		db.session.add(self)
+		db.session.commit()
+
 	def is_following(self, user):
 		return self.followeds.filter_by(followed_id=user.id).first() is not None
 
@@ -220,8 +229,8 @@ class User(db.Model, UserMixin):
 			filter_by(follower_id=self.id)
 
 	@staticmethod
-	def generate_fake_user():
-		for i in range(0, 120):
+	def generate_fake_user(num=120):
+		for i in range(0, num):
 			username = forgery.internet.user_name()
 			email = forgery.internet.email_address()
 			if User.query.filter_by(username=username).first() is not None or \
@@ -333,9 +342,9 @@ class Post(db.Model):
 			out_put_format='html5'), tags=allowed_tags, strip=True))
 
 	@staticmethod
-	def generate_fake_post():
+	def generate_fake_post(num=120):
 		users = User.query.all()
-		for i in range(0, 120):
+		for i in range(0, num):
 			user = random.choice(users)
 			post = Post(body=forgery.lorem_ipsum.paragraphs(), author=user)
 			db.session.add(post)

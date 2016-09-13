@@ -22,8 +22,8 @@ class RegisterForm(Form):
 		Regexp('^[a-zA-Z][a-zA-Z0-9_.]*$', message='Only underscore, dot letters '
 			'and numbers are allowed and start with a letter')])
 	password = PasswordField('Password', validators=[DataRequired(), Length(1, 18),
-		EqualTo('confirm', 'password does not match')])
-	confirm = PasswordField('Confirm Password', validators=[DataRequired()])
+		EqualTo('confirm_password', 'password does not match')])
+	confirm_password = PasswordField('Confirm Password', validators=[DataRequired()])
 	submit = SubmitField('Register')
 
 	# 自定义验证器
